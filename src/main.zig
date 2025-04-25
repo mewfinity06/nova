@@ -5,12 +5,25 @@ const print = std.debug.print;
 // Machine imports
 const machine = @import("machine.zig");
 const Machine = machine.Machine;
+const Word = machine.Word;
+
+// Instruction imports
+const inst = @import("inst.zig");
+
+const Programs = struct {
+    const programs = .{
+        [_]Word{ 1, 2, 3 },
+        [_]Word{},
+    };
+};
 
 pub fn main() !void {
-    var m: Machine = Machine.default;
+    var m = Machine.default;
 
-    try m.set_stack(4, 16);
-    const x = try m.get_stack(4);
-
-    print("m.stack[{d}] = {d}\n", .{ 4, x });
+    inline for (Programs.programs, 0..) |p, i| {
+        print("PROGRAM ({})", .{i});
+        try m.dump(p.len, p);
+        m.print();
+        while (try m.step()) m.print();
+    }
 }
