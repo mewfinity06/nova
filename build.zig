@@ -1,11 +1,5 @@
 const std = @import("std");
 
-// const library_dir: [:0]const u8 = "libs/";
-// const library_ext: [:0]const u8 = ".zig";
-// const shared_libraries = [_][:0]const u8{
-//    "machine",
-// };
-
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -16,29 +10,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // inline for (comptime shared_libraries) |name| {
-    //    // No need for length calculation or slicing at comptime, _lib_name is already a comptime string.
-
-    //    // Construct the full path by concatenating the directory, filename, and extension
-    //   const lib_source_path_str = library_dir ++ name ++ library_ext;
-
-    //    // Use b.path with the single, complete path string
-    //   const lib_source_path = b.path(lib_source_path_str);
-
-    //    const lib = b.addStaticLibrary(.{
-    //        .name = name,
-    //        .root_source_file = lib_source_path,
-    //        .target = target,
-    //        .optimize = optimize,
-    //    });
-
-    //    exe.linkLibrary(lib);
-    // }
-
     b.installArtifact(exe);
 
     const run_exe = b.addRunArtifact(exe);
-
     const run_step = b.step("run", "Run the application");
     run_step.dependOn(&run_exe.step);
+
+    const clean_exe = b.addSystemCommand(&[_][]const u8{ "rm", "-rf", "*.o", "*.a" });
+    const clean_step = b.step("clean", "Clean up your files");
+    clean_step.dependOn(&clean_exe.step);
 }
