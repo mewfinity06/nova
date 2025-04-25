@@ -1,24 +1,42 @@
 const std = @import("std");
 
+const print = std.debug.print;
+
+const Word: type = u8;
+const DataSize: usize = 2048;
+const StackSize: usize = 128;
+
+const MachineError = error{
+    IndexOutOfBounds,
+};
+
+const Machine = struct {
+    stack: [StackSize]Word,
+    data: [DataSize]Word,
+
+    const default: Machine = .{
+        .stack = [_]Word{0} ** StackSize,
+        .data = [_]Word{0} ** DataSize,
+    };
+
+    /// IN  : self, sp
+    /// OUT : Word @ sp
+    pub fn get_stack(self: Machine, sp: usize) MachineError!Word {
+        if (sp >= StackSize) return MachineError.IndexOutOfBounds;
+        return self.stack[sp];
+    }
+
+    pub fn set_stack(self: *Machine, sp: usize, value: Word) MachineError!void {
+        if (sp >= StackSize) return MachineError.IndexOutOfBounds;
+        self.stack[sp] = value;
+    }
+};
+
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var m: Machine = Machine.default;
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    try m.set_stack(4, 16);
+    const x = try m.get_stack(4);
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // don't forget to flush!
-}
-
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+    print("m.stack[{d}] = {d}\n", .{ 4, x });
 }
