@@ -16,11 +16,18 @@ fn ptr_usz(p: Pointer) usize {
 }
 
 pub const Machine = struct {
+    /// Stack
     stack: [StackSize]Word,
+    /// Registers
     regs: [RegisterCount]Word,
+    /// Data (Program)
     data: [DataSize]Word,
+    /// Data pointer
     dp: Pointer,
+    /// Stack pointer
     sp: Pointer,
+    /// Ret pointer
+    rp: Pointer,
 
     pub const default: Machine = .{
         .stack = [_]Word{0} ** StackSize,
@@ -28,16 +35,35 @@ pub const Machine = struct {
         .data = [_]Word{0} ** DataSize,
         .dp = -1,
         .sp = -1,
+        .rp = -1,
     };
+
+    fn is_regs_zeroed(self: Machine) bool {
+        for (self.regs) |reg| {
+            if (reg != 0) return false;
+        }
+        return true;
+    }
+
+    fn stack_empty(self: Machine) bool {
+        return self.sp <= 0;
+    }
 
     pub fn step(self: *Machine) !bool {
         if (self.dp >= DataSize) return false;
         self.print();
         const inst: Inst = try self.fetch_enum(Inst);
         switch (inst) {
-            .Ret => {}, // TODO
             .Nop => {},
-            .Halt => return false,
+            // TODO: Finish ret
+            .Halt => {
+                if (!self.stack_empty()) return error.StackMustBeEmpty;
+                return false;
+            },
+            .Ret => {
+                if (!self.stack_empty()) return error.StackMustBeEmpty;
+                self.dp = self.rp;
+            },
             .Push => {
                 const v = try self.fetch();
                 if (ptr_usz(self.sp) >= StackSize) return error.StackOverflow;
@@ -91,6 +117,11 @@ pub const Machine = struct {
                 self.stack[ptr_usz(self.sp) - 2] = b % a;
                 self.sp -= 1;
             },
+            .Drop => {
+                const reg = try self.fetch();
+                if (reg >= RegisterCount) return error.RegisterOutOfBounds;
+                self.regs[@as(usize, reg)] = 0;
+            },
             // else => {
             //     debug.print("Unimplemented {}\n", .{inst});
             //     return error.Unimplemented;
@@ -99,36 +130,41 @@ pub const Machine = struct {
         return true;
     }
 
-    fn prologue(prog_name: []const u8) void {
-        debug.print("PROGRAM {s}()\n", .{prog_name});
+    fn function_prologue(pid: usize) void {
+        debug.print("{}:\n", .{pid});
     }
 
-    fn epilogue(prog_name: []const u8) void {
-        debug.print("END ; {s}\n", .{prog_name});
-    }
+    fn function_epilogue(_: usize) void {}
 
     fn print_stack(self: Machine) void {
-        debug.print("        : ", .{});
+        debug.print("      N, ", .{});
         for (self.stack) |stack| {
             debug.print("{}, ", .{stack});
         }
         debug.print("\n", .{});
-        debug.print("       ", .{});
+        debug.print("      ", .{});
         for (0..ptr_usz(self.sp)) |_| {
             debug.print("   ", .{});
         }
         debug.print("^\n", .{});
     }
 
-    pub fn debug_bin(self: *Machine, prog_name: []const u8) !void {
-        Machine.prologue(prog_name);
+    pub fn debug_bin(self: *Machine, progid: usize) !void {
+        Machine.function_prologue(progid);
         var i: usize = 0;
         while (i < self.data.len) : (i += 1) {
             var word = self.data[i];
             const inst: Inst = @enumFromInt(word);
 
             switch (inst) {
-                .Nop => debug.print("    nop\n", .{}),
+                .Nop => {
+                    debug.print("    nop\n", .{});
+                },
+                .Drop => {
+                    i += 1;
+                    word = self.data[i];
+                    debug.print("    drop {}\n", .{word});
+                },
                 .Halt => {
                     debug.print("    halt\n", .{});
                     break;
@@ -168,7 +204,7 @@ pub const Machine = struct {
                 // },
             }
         }
-        Machine.epilogue(prog_name);
+        Machine.function_epilogue(progid);
     }
 
     fn fetch_enum(self: *Machine, comptime T: type) !T {
@@ -195,14 +231,14 @@ pub const Machine = struct {
         if (self.dp >= DataSize) return;
         if (self.sp >= StackSize) return;
         const inst: Inst = @as(Inst, @enumFromInt(self.data[ptr_usz(self.dp)]));
-        debug.print("-- dp: {}, sp: {}\n", .{ self.dp, self.sp });
+        debug.print("-- dp: {}, sp: {}, rp: {}\n", .{ self.dp, self.sp, self.rp });
         if (inst == Inst.Nop) return;
-        debug.print("    ", .{});
-        for (self.regs, 0..) |reg, i| {
+        debug.print("   ", .{});
+        for (self.regs, 1..) |reg, i| {
             debug.print("r{}:{}, ", .{ i, reg });
         }
         debug.print("\n", .{});
-        debug.print("    Inst: {any} ({})\n", .{ inst, self.data[ptr_usz(self.dp) + 1] });
+        debug.print("   Inst: {any} ({})\n", .{ inst, self.data[ptr_usz(self.dp) + 1] });
         self.print_stack();
         debug.print("\n", .{});
     }
@@ -223,6 +259,7 @@ pub const Machine = struct {
     }
 
     pub fn print_dumped(self: Machine, size: comptime_int) void {
+        debug.print("PROGRAM (size: {})\n", .{size});
         for (self.data, 0..) |d, i| {
             if (i % 10 == 0 and i != 0) debug.print("\n", .{});
             if (i == size) break;
