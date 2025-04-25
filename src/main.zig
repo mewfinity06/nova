@@ -8,31 +8,50 @@ const Machine = machine.Machine;
 const Word = machine.Word;
 
 // Instruction imports
-const inst = @import("inst.zig");
+const Inst = @import("inst.zig").Inst;
+
+fn word(inst: Inst) Word {
+    return inst.as_word();
+}
 
 const Programs = struct {
     const programs = .{
-        [_]Word{ 0x1, 0xFF }, // Nop
-        [_]Word{ 0x2, 0x1, 0x3, 0x0, 0xFF }, // PushPop
+        // Nop
+        [_]Word{word(.Nop)},
+        // PopPush
         [_]Word{
-            // Add
-            0x2,  0x5, 0x2, 0x4, 0x4, 0x3, 0x0,
-            // Sub
-            0x2,  0x4, 0x2, 0x1, 0x5, 0x3, 0x1,
-            // Mul
-            0x2,  0x3, 0x2, 0x8, 0x6, 0x3, 0x2,
-            // Div
-            0x2,  0x3, 0x2, 0x8, 0x7, 0x3, 0x3,
-            // Mod
-            0x2,  0x8, 0x2, 0x3, 0x8, 0x3, 0x4,
-            // ret
-            0xFF,
+            word(.Push), 0x1, //
+            word(.Pop), 0x0, //
         },
-    };
-    const program_names = .{
-        "Nop",
-        "PushPop",
-        "Math",
+        // Math'ng
+        [_]Word{
+            //  inst     arg
+            // Add
+            word(.Push), 0x5, //
+            word(.Push), 0x4, //
+            word(.Add), //
+            word(.Pop), 0x0, //
+            // Sub
+            word(.Push), 0x4, //
+            word(.Push), 0x1, //
+            word(.Sub), //
+            word(.Pop), 0x1, //
+            // Mul
+            word(.Push), 0x4, //
+            word(.Push), 0x1, //
+            word(.Mul), //
+            word(.Pop), 0x2, //
+            // Div
+            word(.Push), 0x4, //
+            word(.Push), 0x1, //
+            word(.Div), //
+            word(.Pop), 0x3, //
+            // Mod
+            word(.Push), 0x4, //
+            word(.Push), 0x1, //
+            word(.Mod), //
+            word(.Pop), 0x4, //
+        },
     };
 };
 
