@@ -56,17 +56,16 @@ const Programs = struct {
 };
 
 fn prologue() void {
-    print("_start: PROGRAM Main\n", .{});
-    print("    call Main\n", .{});
+    print("_start: PROGRAM .main\n", .{});
+    print("    goto .main\n", .{});
     print("\n", .{});
 }
 
-fn epilogue() void {
-    print("PROGRAM Main()\n", .{});
-    inline for (Programs.program_names) |name| {
-        print("    call {s}\n", .{name});
+fn epilogue(num_pids: usize) void {
+    print(".main:\n", .{});
+    for (0..num_pids) |pid| {
+        print("    goto :{}\n", .{pid});
     }
-    print("END ; Main\n", .{});
 }
 
 const BuildType = enum {
@@ -76,24 +75,26 @@ const BuildType = enum {
 
 pub fn main() !void {
     var m = Machine.default;
-    const bt = BuildType.Dump;
+    const bt = BuildType.Debug;
 
     if (bt == .Debug) prologue();
 
-    inline for (Programs.programs, Programs.program_names) |p, p_name| {
+    var pids: usize = 0;
+    inline for (Programs.programs, 0..) |p, pid| {
         try m.dump(p.len, p);
+        pids += 1;
         switch (bt) {
             .Debug => {
-                try m.debug_bin(p_name);
+                try m.debug_bin(pid);
                 print("\n", .{});
             },
             .Dump => {
-                // m.print_dumped(p.len);
-                print("PROGRAM {s}\n", .{p_name});
+                m.print_dumped(p.len);
+                print("{}:\n", .{pid});
                 while (try m.step()) {}
             },
         }
     }
 
-    if (bt == .Debug) epilogue();
+    if (bt == .Debug) epilogue(pids);
 }
