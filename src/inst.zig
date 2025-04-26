@@ -12,6 +12,9 @@ pub const Inst = enum(Word) {
     Div = 0x8,
     Mod = 0x9,
     Drop = 0x10,
+    // Goto only accepts specific address, absolute addressing
+    Goto = 0x12,
+    Exit = 0x13,
 
     pub fn as_word(self: Inst) Word {
         return @intFromEnum(self);
