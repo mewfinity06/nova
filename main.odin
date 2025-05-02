@@ -20,6 +20,7 @@ main :: proc() {
 		fmt.eprintfln("     | Program too long, expected %d found %d", MaxProgramSize, len(prog))
 	case:
 		fmt.eprintfln("Error: Unknown Error found: %s", ok)
+		unreachable()
 	}
 
 	for {
