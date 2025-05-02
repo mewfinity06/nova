@@ -85,7 +85,6 @@ MachineStep :: proc(self: ^Machine) -> MachineError {
 		self.sp += 1
 	case .Pop:
 		if self.sp < 0 {return .StackUnderflow}
-		self.reg = self.stack[self.sp]
 		self.sp -= 1
 		self.reg = self.stack[self.sp]
 		self.stack[self.sp] = 0
