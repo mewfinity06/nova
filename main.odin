@@ -26,8 +26,12 @@ main :: proc() {
 		ok := MachineStep(&machine)
 
 		#partial switch ok {
-		case .Ok:
+		case .Ok: // Do nothing
+		case .Done:
+			os.exit(0)
 		case:
+			fmt.eprintfln("Error: %s", ok)
+			os.exit(1)
 		}
 	}
 }
