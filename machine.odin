@@ -70,6 +70,7 @@ MachineStep :: proc(self: ^Machine) -> MachineError {
 		return ok
 	}
 
+	fmt.println("-------------------------------------------")
 	MachinePrint(self)
 	fmt.println("    Inst:", inst)
 
