@@ -87,6 +87,8 @@ MachineStep :: proc(self: ^Machine) -> MachineError {
 		if self.sp < 0 {return .StackUnderflow}
 		self.reg = self.stack[self.sp]
 		self.sp -= 1
+		self.reg = self.stack[self.sp]
+		self.stack[self.sp] = 0
 	case:
 		fmt.eprintln("Error: Unknown instruction")
 		fmt.eprintfln("     | Found '%s'", inst)
