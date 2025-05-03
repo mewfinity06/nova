@@ -23,6 +23,11 @@ Instruction :: enum Word {
 	Nop  = 0x1,
 	Push = 0x2,
 	Pop  = 0x3,
+	Add  = 0x4,
+	Sub  = 0x5,
+	Mul  = 0x6,
+	Div  = 0x7,
+	Mod  = 0x8,
 }
 
 inst :: proc(self: Instruction) -> Word {
@@ -89,6 +94,42 @@ MachineStep :: proc(self: ^Machine) -> MachineError {
 		self.sp -= 1
 		self.reg = self.stack[self.sp]
 		self.stack[self.sp] = 0
+		self.sp -= 1
+	case .Add:
+		if self.sp > 2 {return .StackUnderflow}
+		a := self.stack[self.sp - 1]
+		b := self.stack[self.sp - 2]
+		self.stack[self.sp - 1] = 0
+		self.stack[self.sp - 2] = b + a
+		self.sp -= 2
+	case .Sub:
+		if self.sp > 2 {return .StackUnderflow}
+		a := self.stack[self.sp - 1]
+		b := self.stack[self.sp - 2]
+		self.stack[self.sp - 1] = 0
+		self.stack[self.sp - 2] = b - a
+		self.sp -= 2
+	case .Mul:
+		if self.sp > 2 {return .StackUnderflow}
+		a := self.stack[self.sp - 1]
+		b := self.stack[self.sp - 2]
+		self.stack[self.sp - 1] = 0
+		self.stack[self.sp - 2] = b * a
+		self.sp -= 2
+	case .Div:
+		if self.sp > 2 {return .StackUnderflow}
+		a := self.stack[self.sp - 1]
+		b := self.stack[self.sp - 2]
+		self.stack[self.sp - 1] = 0
+		self.stack[self.sp - 2] = b / a
+		self.sp -= 2
+	case .Mod:
+		if self.sp > 2 {return .StackUnderflow}
+		a := self.stack[self.sp - 1]
+		b := self.stack[self.sp - 2]
+		self.stack[self.sp - 1] = 0
+		self.stack[self.sp - 2] = b % a
+		self.sp -= 2
 	case:
 		fmt.eprintln("Error: Unknown instruction")
 		fmt.eprintfln("     | Found '%s'", inst)
